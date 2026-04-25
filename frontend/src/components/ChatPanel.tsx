@@ -38,7 +38,7 @@ export function ChatPanel() {
         )}
         {conversation.map((msg, i) => (
           <div
-            key={i}
+            key={`${msg.role}-${i}`}
             style={{
               marginBottom: 16,
               display: 'flex',
@@ -61,12 +61,12 @@ export function ChatPanel() {
           </div>
         ))}
         {isDesigning && (
-          <div style={{ color: '#888', fontSize: 13, textAlign: 'center', marginTop: 8 }}>
+          <div role="status" style={{ color: '#888', fontSize: 13, textAlign: 'center', marginTop: 8 }}>
             Marcus is designing your speakers… this takes 1-2 minutes.
           </div>
         )}
         {isLoading && !isDesigning && (
-          <div style={{ color: '#888', fontSize: 13 }}>Marcus is typing…</div>
+          <div role="status" style={{ color: '#888', fontSize: 13 }}>Marcus is typing…</div>
         )}
         <div ref={bottomRef} />
       </div>
