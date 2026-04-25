@@ -1,4 +1,4 @@
-import type { SessionState } from '../types'
+import type { SessionState, Phase } from '../types'
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const hasBody = init?.body !== undefined
@@ -24,7 +24,7 @@ export function getSession(sessionId: string): Promise<SessionState> {
 export function sendMessage(
   sessionId: string,
   content: string
-): Promise<{ reply: string; phase: string; transition: string | null }> {
+): Promise<{ reply: string; phase: Phase; transition: string | null }> {
   return apiFetch(`/sessions/${sessionId}/message`, {
     method: 'POST',
     body: JSON.stringify({ content }),

@@ -12,6 +12,7 @@ interface SessionContextValue {
   bom: BOM | null
   isLoading: boolean
   isDesigning: boolean
+  error: string | null
   start: () => Promise<void>
   send: (message: string) => Promise<void>
 }
@@ -26,13 +27,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [bom, setBom] = useState<BOM | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isDesigning, setIsDesigning] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const startPolling = useCallback((id: string) => {
     if (pollRef.current) clearInterval(pollRef.current)
+    let consecutiveErrors = 0
     pollRef.current = setInterval(async () => {
       try {
         const state = await getSession(id)
+        consecutiveErrors = 0
         setPhase(state.phase)
         if (state.design_output) setDesignOutput(state.design_output)
         if (state.bom) setBom(state.bom)
@@ -41,7 +45,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           if (pollRef.current) clearInterval(pollRef.current)
         }
       } catch {
-        // ignore transient errors during polling
+        consecutiveErrors++
+        if (consecutiveErrors >= 5) {
+          setIsDesigning(false)
+          if (pollRef.current) clearInterval(pollRef.current)
+        }
       }
     }, 2000)
   }, [])
@@ -49,6 +57,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
   const start = useCallback(async () => {
+    setError(null)
     setIsLoading(true)
     try {
       const { session_id } = await createSession()
@@ -57,6 +66,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setConversation([])
       setDesignOutput(null)
       setBom(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start session')
+      throw err
     } finally {
       setIsLoading(false)
     }
@@ -64,16 +76,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const send = useCallback(async (content: string) => {
     if (!sessionId) return
+    setError(null)
     setConversation(prev => [...prev, { role: 'user', content }])
     setIsLoading(true)
     try {
       const result = await sendMessage(sessionId, content)
       setConversation(prev => [...prev, { role: 'assistant', content: result.reply }])
-      setPhase(result.phase as Phase)
+      setPhase(result.phase)
       if (result.transition === 'designing') {
         setIsDesigning(true)
         startPolling(sessionId)
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send message')
+      throw err
     } finally {
       setIsLoading(false)
     }
@@ -82,7 +98,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   return (
     <SessionContext.Provider value={{
       sessionId, phase, conversation, designOutput, bom,
-      isLoading, isDesigning, start, send,
+      isLoading, isDesigning, error, start, send,
     }}>
       {children}
     </SessionContext.Provider>
