@@ -40,7 +40,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setPhase(state.phase)
         if (state.design_output) setDesignOutput(state.design_output)
         if (state.bom) setBom(state.bom)
-        if (state.phase === 'complete' || state.phase === 'intake') {
+        if (state.phase === 'complete') {
           setIsDesigning(false)
           if (pollRef.current) clearInterval(pollRef.current)
         }
