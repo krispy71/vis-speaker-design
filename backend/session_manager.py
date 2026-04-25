@@ -215,3 +215,55 @@ AVAILABLE TWEETERS:
     session.phase = Phase.BOM
     save_session(session)
     return design
+
+
+# ── Phase 3: BOM assembly ──────────────────────────────────────────────────────
+
+_BOM_SYSTEM = """You are Marcus Webb, a master speaker designer. Generate a complete bill of materials for the speaker design below.
+
+Output ONLY a valid JSON object with this exact structure — no preamble, no markdown fences:
+{
+  "items": [
+    {
+      "category": "drivers",
+      "part": "Woofer",
+      "manufacturer": "...",
+      "model": "...",
+      "qty": 2,
+      "unit_price": 0.0,
+      "extended_price": 0.0,
+      "source_url": "..."
+    }
+  ],
+  "subtotals": {"drivers": 0.0, "crossover": 0.0, "hardware": 0.0},
+  "grand_total": 0.0,
+  "rationale": "..."
+}
+
+Categories must be exactly: "drivers", "crossover", or "hardware".
+Include all crossover components from the design. Include basic hardware (binding posts, terminal cup, damping material).
+The rationale field is a 2-3 sentence paragraph explaining the key design decisions.
+Use real current prices from the buy_url sources if you know them; otherwise estimate."""
+
+
+def run_bom_assembly(session: Session) -> BOM:
+    """
+    Run Phase 3: generate a line-item BOM from the design output.
+    Persists BOM to DB and advances phase to COMPLETE.
+    """
+    if session.design_output is None:
+        raise ValueError("Session has no design output — run design generation first")
+
+    prompt = f"""{_BOM_SYSTEM}
+
+SPEAKER DESIGN:
+{session.design_output.model_dump_json(indent=2)}"""
+
+    response = run_claude(prompt, timeout=120)
+    clean = response.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    bom = BOM(**json.loads(clean))
+
+    session.bom = bom
+    session.phase = Phase.COMPLETE
+    save_session(session)
+    return bom

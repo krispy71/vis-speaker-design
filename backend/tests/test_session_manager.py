@@ -132,3 +132,41 @@ def test_design_generation_raises_without_brief():
     session = create_session()
     with pytest.raises(ValueError, match="design brief"):
         run_design_generation(session)
+
+from session_manager import run_bom_assembly
+from models import DesignOutput
+
+_SAMPLE_BOM_JSON = json.dumps({
+    "items": [
+        {"category": "drivers", "part": "Woofer", "manufacturer": "Dayton Audio",
+         "model": "RS180-8", "qty": 2, "unit_price": 59.98, "extended_price": 119.96,
+         "source_url": "https://parts-express.com/275-196"},
+        {"category": "drivers", "part": "Tweeter", "manufacturer": "Dayton Audio",
+         "model": "ND25FA-4", "qty": 2, "unit_price": 24.98, "extended_price": 49.96,
+         "source_url": "https://parts-express.com/275-025"},
+        {"category": "crossover", "part": "Inductor", "manufacturer": "Dayton Audio",
+         "model": "LMIN-0.56", "qty": 2, "unit_price": 4.50, "extended_price": 9.00,
+         "source_url": None}
+    ],
+    "subtotals": {"drivers": 169.92, "crossover": 9.00, "hardware": 0.0},
+    "grand_total": 178.92,
+    "rationale": "The RS180-8 was chosen for its well-damped sealed-box Qts..."
+})
+
+def test_bom_assembly_populates_bom():
+    session = create_session()
+    session.phase = Phase.BOM
+    session.design_output = DesignOutput(**json.loads(_SAMPLE_DESIGN_JSON))
+    save_session(session)
+    with patch("session_manager.run_claude", return_value=_SAMPLE_BOM_JSON):
+        bom = run_bom_assembly(session)
+    assert bom.grand_total == 178.92
+    assert len(bom.items) == 3
+    fetched = get_session(session.id)
+    assert fetched.bom is not None
+    assert fetched.phase == Phase.COMPLETE
+
+def test_bom_assembly_raises_without_design():
+    session = create_session()
+    with pytest.raises(ValueError, match="design output"):
+        run_bom_assembly(session)
