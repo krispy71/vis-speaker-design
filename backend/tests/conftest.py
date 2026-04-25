@@ -1,4 +1,3 @@
-import sqlite3
 import pytest
 import sys
 import os
@@ -8,7 +7,7 @@ from database import init_db, get_connection
 
 @pytest.fixture
 def db(tmp_path):
-    """In-memory SQLite database for tests."""
+    """Temporary file-backed SQLite database for test isolation."""
     import database
     original = database.DB_PATH
     database.DB_PATH = tmp_path / "test.db"
