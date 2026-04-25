@@ -14,7 +14,7 @@ export function BomTable({ bom }: { bom: BOM }) {
         </thead>
         <tbody>
           {bom.items.map((item, i) => (
-            <tr key={i} style={{ borderBottom: '1px solid #eee', background: i % 2 ? '#fafafa' : 'white' }}>
+            <tr key={`${item.category}-${item.part}-${item.model}`} style={{ borderBottom: '1px solid #eee', background: i % 2 ? '#fafafa' : 'white' }}>
               <td style={{ padding: '5px 10px' }}>{item.category}</td>
               <td style={{ padding: '5px 10px' }}>{item.part}</td>
               <td style={{ padding: '5px 10px' }}>{item.manufacturer} {item.model}</td>

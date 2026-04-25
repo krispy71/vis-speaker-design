@@ -1,4 +1,5 @@
 // frontend/src/components/ExportButtons.tsx
+import type { CSSProperties } from 'react'
 import { exportPdfUrl, exportCsvUrl } from '../api/client'
 
 export function ExportButtons({ sessionId }: { sessionId: string }) {
@@ -14,7 +15,7 @@ export function ExportButtons({ sessionId }: { sessionId: string }) {
   )
 }
 
-function linkBtnStyle(bg: string, color: string): React.CSSProperties {
+function linkBtnStyle(bg: string, color: string): CSSProperties {
   return {
     padding: '8px 18px', background: bg, color, border: `1px solid #333`,
     borderRadius: 6, textDecoration: 'none', fontSize: 13, fontWeight: 'bold',

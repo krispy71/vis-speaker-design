@@ -38,7 +38,7 @@ export function ResultsPanel({ design, bom, sessionId, phase }: Props) {
       </div>
 
       <h3 style={{ marginBottom: 10 }}>Drivers</h3>
-      {design.drivers.map((d, i) => <DriverCard key={i} driver={d} />)}
+      {design.drivers.map((d) => <DriverCard key={d.role} driver={d} />)}
 
       <h3 style={{ margin: '20px 0 10px' }}>Crossover Components</h3>
       <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
@@ -50,8 +50,8 @@ export function ResultsPanel({ design, bom, sessionId, phase }: Props) {
           </tr>
         </thead>
         <tbody>
-          {design.crossover.components.map((c, i) => (
-            <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+          {design.crossover.components.map((c) => (
+            <tr key={`${c.type}-${c.role}`} style={{ borderBottom: '1px solid #eee' }}>
               <td style={{ padding: '4px 10px', textTransform: 'capitalize' }}>{c.type}</td>
               <td style={{ padding: '4px 10px', fontFamily: 'monospace' }}>{c.value}</td>
               <td style={{ padding: '4px 10px', color: '#555' }}>{c.role}</td>
