@@ -7,7 +7,7 @@ export function BomTable({ bom }: { bom: BOM }) {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
           <tr style={{ background: '#333', color: 'white' }}>
-            {['Category', 'Part', 'Model', 'Qty', 'Unit Price', 'Source'].map(h => (
+            {['Category', 'Part', 'Model', 'Qty', 'Unit', 'Extended', 'Source'].map(h => (
               <th key={h} style={{ padding: '6px 10px', textAlign: 'left' }}>{h}</th>
             ))}
           </tr>
@@ -20,6 +20,7 @@ export function BomTable({ bom }: { bom: BOM }) {
               <td style={{ padding: '5px 10px' }}>{item.manufacturer} {item.model}</td>
               <td style={{ padding: '5px 10px' }}>{item.qty}</td>
               <td style={{ padding: '5px 10px' }}>${item.unit_price.toFixed(2)}</td>
+              <td style={{ padding: '5px 10px' }}>${item.extended_price.toFixed(2)}</td>
               <td style={{ padding: '5px 10px' }}>
                 {item.source_url
                   ? <a href={item.source_url} target="_blank" rel="noopener noreferrer">Buy</a>
@@ -29,8 +30,15 @@ export function BomTable({ bom }: { bom: BOM }) {
           ))}
         </tbody>
         <tfoot>
+          {Object.entries(bom.subtotals).map(([cat, total]) => (
+            <tr key={cat} style={{ fontWeight: 'bold', background: '#f5f5f5' }}>
+              <td colSpan={5} style={{ padding: '4px 10px', textAlign: 'right', textTransform: 'capitalize' }}>{cat}</td>
+              <td style={{ padding: '4px 10px' }}>${total.toFixed(2)}</td>
+              <td />
+            </tr>
+          ))}
           <tr style={{ fontWeight: 'bold', fontSize: 15, background: '#e8d5a3' }}>
-            <td colSpan={4} style={{ padding: '6px 10px', textAlign: 'right' }}>Grand Total</td>
+            <td colSpan={5} style={{ padding: '6px 10px', textAlign: 'right' }}>Grand Total</td>
             <td style={{ padding: '6px 10px' }}>${bom.grand_total.toFixed(2)}</td>
             <td />
           </tr>

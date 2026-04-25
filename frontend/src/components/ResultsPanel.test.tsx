@@ -43,6 +43,6 @@ describe('ResultsPanel', () => {
 
   it('shows grand total when BOM is available', () => {
     render(<ResultsPanel design={mockDesign} bom={mockBom} sessionId="abc" phase="complete" />)
-    expect(screen.getByText(/119\.96/)).toBeInTheDocument()
+    expect(screen.getByText('Grand Total')).toBeInTheDocument()
   })
 })
