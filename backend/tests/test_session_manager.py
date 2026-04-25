@@ -41,3 +41,29 @@ def test_save_session_persists_phase():
     save_session(session)
     fetched = get_session(session.id)
     assert fetched.phase == Phase.DESIGN
+
+from unittest.mock import patch
+from session_manager import run_intake_turn
+
+def test_intake_turn_adds_messages_to_conversation():
+    session = create_session()
+    with patch("session_manager.run_claude", return_value="What music do you listen to?"):
+        reply, brief = run_intake_turn(session, "I want bookshelf speakers")
+    assert reply == "What music do you listen to?"
+    assert brief is None
+    # session should have 2 messages: user + assistant
+    fetched = get_session(session.id)
+    assert len(fetched.conversation) == 2
+
+def test_intake_turn_detects_completion():
+    session = create_session()
+    complete_response = """Great, I have what I need.
+<<INTAKE_COMPLETE>>
+{"room_size": "medium", "amp_power": "50W tube", "sources": ["vinyl"], "topology_preference": "passive", "budget_drivers_usd": 800.0, "listening_goals": "natural timbre", "constraints": []}"""
+    with patch("session_manager.run_claude", return_value=complete_response):
+        reply, brief = run_intake_turn(session, "Budget is $800")
+    assert brief is not None
+    assert brief.budget_drivers_usd == 800.0
+    fetched = get_session(session.id)
+    assert fetched.phase == Phase.DESIGN
+    assert fetched.design_brief is not None
