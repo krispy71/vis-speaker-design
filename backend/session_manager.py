@@ -6,6 +6,7 @@ from typing import Optional, Tuple
 import database
 from models import Session, Phase, Message, DesignBrief, DesignOutput, BOM
 from claude_runner import run_claude
+from driver_db import find_driver_candidates
 
 
 # ── CRUD ──────────────────────────────────────────────────────────────────────
@@ -132,3 +133,85 @@ def run_intake_turn(
 
     save_session(session)
     return reply, brief
+
+
+# ── Phase 2: Design generation ─────────────────────────────────────────────────
+
+_DESIGN_SYSTEM = """You are Marcus Webb, a master speaker designer. Based on the design brief and available drivers below, create a complete speaker design.
+
+Output ONLY a valid JSON object — no preamble, no explanation, no markdown fences. Use this exact structure:
+{
+  "speaker_type": "2-way",
+  "enclosure_type": "sealed",
+  "enclosure_dimensions_mm": {"h": 380, "w": 210, "d": 280},
+  "internal_volume_liters": 12.5,
+  "drivers": [
+    {
+      "role": "woofer",
+      "manufacturer": "...",
+      "model": "...",
+      "justification": "...",
+      "ts_params": {}
+    }
+  ],
+  "crossover": {
+    "topology": "2nd order Linkwitz-Riley",
+    "crossover_freq_hz": 2200,
+    "components": [
+      {"type": "inductor", "value": "0.56mH", "role": "woofer low-pass L1"}
+    ]
+  },
+  "dsp_notes": null
+}
+
+Choose drivers from the AVAILABLE DRIVERS list. Select the best match for the brief. Provide real crossover component values calculated for the selected drivers and crossover frequency."""
+
+
+def _format_driver_list(drivers) -> str:
+    if not drivers:
+        return "None in catalog — suggest specific models to research."
+    lines = []
+    for d in drivers:
+        lines.append(
+            f"  - {d.manufacturer} {d.model}: fs={d.fs_hz}Hz Qts={d.qts} "
+            f"Vas={d.vas_liters}L Xmax={d.xmax_mm}mm sens={d.sensitivity_db}dB "
+            f"${d.price_usd}"
+        )
+    return "\n".join(lines)
+
+
+def run_design_generation(session: Session) -> DesignOutput:
+    """
+    Run Phase 2: generate a full speaker design from the design brief.
+    Retries once if no driver candidates are found in catalog.
+    Persists design_output to DB and advances phase to BOM.
+    """
+    if session.design_brief is None:
+        raise ValueError("Session has no design brief — complete intake first")
+
+    brief = session.design_brief
+    budget_per_driver = brief.budget_drivers_usd / 2  # rough split
+
+    woofers = find_driver_candidates("woofer", budget_per_driver)
+    tweeters = find_driver_candidates("tweeter", brief.budget_drivers_usd * 0.3)
+
+    prompt = f"""{_DESIGN_SYSTEM}
+
+DESIGN BRIEF:
+{brief.model_dump_json(indent=2)}
+
+AVAILABLE WOOFERS:
+{_format_driver_list(woofers)}
+
+AVAILABLE TWEETERS:
+{_format_driver_list(tweeters)}"""
+
+    response = run_claude(prompt, timeout=180)
+    # Strip any accidental markdown fences
+    clean = response.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    design = DesignOutput(**json.loads(clean))
+
+    session.design_output = design
+    session.phase = Phase.BOM
+    save_session(session)
+    return design
