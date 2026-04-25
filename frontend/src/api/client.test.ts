@@ -32,3 +32,27 @@ describe('sendMessage', () => {
     )
   })
 })
+
+describe('getSession', () => {
+  it('calls GET /sessions/:id and returns session state', async () => {
+    const mockSession = {
+      id: 'abc-123',
+      phase: 'intake',
+      conversation: [],
+      design_brief: null,
+      design_output: null,
+      bom: null,
+    }
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockSession,
+    })
+    const result = await getSession('abc-123')
+    expect(result.id).toBe('abc-123')
+    expect(result.phase).toBe('intake')
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/sessions/abc-123',
+      expect.objectContaining({ headers: {} })
+    )
+  })
+})

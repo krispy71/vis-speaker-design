@@ -1,8 +1,9 @@
 import type { SessionState } from '../types'
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const hasBody = init?.body !== undefined
   const response = await fetch(path, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: hasBody ? { 'Content-Type': 'application/json' } : {},
     ...init,
   })
   if (!response.ok) {
