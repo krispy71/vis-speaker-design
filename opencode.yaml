@@ -1,0 +1,17 @@
+project_name: "acoustic-did"
+manager:
+  model: "claude-4-7-opus" # The "Architect"
+  role: "planning, review, architecture"
+  
+workers:
+  - id: "worker_codex"
+    model: "gpt-5-codex" # The "Factory"
+    role: "boilerplate, unit_tests, styling"
+    
+  - id: "worker_gemini"
+    model: "gemini-3-pro" # The "Librarian"
+    role: "documentation_analysis, legacy_code_audit, context_search"
+
+pipeline:
+  auto_review: true
+  git_integration: true
